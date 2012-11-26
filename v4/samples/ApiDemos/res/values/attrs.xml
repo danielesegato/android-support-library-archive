@@ -44,4 +44,12 @@
             <enum name="drop" value="2" />
         </attr>
     </declare-styleable>
+
+    <!-- These are the attributes that we want to retrieve for
+         app/FragmentArguments.java -->
+
+    <declare-styleable name="FragmentArguments">
+        <attr name="android:label" />
+    </declare-styleable>
+
 </resources>

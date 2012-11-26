@@ -48,7 +48,7 @@ public class FragmentListCursorLoader extends Activity {
         super.onCreate(savedInstanceState);
 
         FragmentManager fm = getFragmentManager();
-
+        
         // Create the list fragment and add it as our sole content.
         if (fm.findFragmentById(android.R.id.content) == null) {
             CursorLoaderListFragment list = new CursorLoaderListFragment();
@@ -82,7 +82,7 @@ public class FragmentListCursorLoader extends Activity {
                     new String[] { Contacts.DISPLAY_NAME, Contacts.CONTACT_STATUS },
                     new int[] { android.R.id.text1, android.R.id.text2 }, 0);
             setListAdapter(mAdapter);
-
+            
             // Prepare the loader.  Either re-connect with an existing one,
             // or start a new one.
             getLoaderManager().initLoader(0, null, this);
@@ -107,11 +107,11 @@ public class FragmentListCursorLoader extends Activity {
             return true;
         }
 
-        public boolean onQueryTextSubmit(String query) {
+        @Override public boolean onQueryTextSubmit(String query) {
             // Don't care about this.
             return true;
         }
-
+        
         @Override public void onListItemClick(ListView l, View v, int position, long id) {
             // Insert desired behavior here.
             Log.i("FragmentComplexList", "Item clicked: " + id);

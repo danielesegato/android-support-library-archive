@@ -253,7 +253,7 @@ public class FragmentActivity extends Activity {
             fragment.mInLayout = true;
             fragment.mImmediateActivity = this;
             fragment.mFragmentManager = mFragments;
-            fragment.onInflate(attrs, fragment.mSavedFragmentState);
+            fragment.onInflate(this, attrs, fragment.mSavedFragmentState);
             mFragments.addFragment(fragment, true);
 
         } else if (fragment.mInLayout) {
@@ -272,7 +272,7 @@ public class FragmentActivity extends Activity {
             // from last saved state), then give it the attributes to
             // initialize itself.
             if (!fragment.mRetaining) {
-                fragment.onInflate(attrs, fragment.mSavedFragmentState);
+                fragment.onInflate(this, attrs, fragment.mSavedFragmentState);
             }
             mFragments.moveToState(fragment);
         }
@@ -641,10 +641,10 @@ public class FragmentActivity extends Activity {
         if ((requestCode&0xffff0000) != 0) {
             throw new IllegalArgumentException("Can only use lower 16 bits for requestCode");
         }
-        super.startActivityForResult(intent, (fragment.mIndex+1)<<16 + (requestCode*0xffff));
+        super.startActivityForResult(intent, ((fragment.mIndex+1)<<16) + (requestCode&0xffff));
     }
     
-    void invalidateFragmentIndex(int index) {
+    void invalidateSupportFragmentIndex(int index) {
         //Log.v(TAG, "invalidateFragmentIndex: index=" + index);
         if (mAllLoaderManagers != null) {
             LoaderManagerImpl lm = mAllLoaderManagers.get(index);

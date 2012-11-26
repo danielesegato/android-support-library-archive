@@ -40,11 +40,9 @@
 
     <!-- We will request access to the camera, saying we require a camera
          of some sort but not one with autofocus capability. -->
-    <!--
     <uses-permission android:name="android.permission.CAMERA" />
     <uses-feature android:name="android.hardware.camera" />
     <uses-feature android:name="android.hardware.camera.autofocus" android:required="false" />
-    -->
 
     <application android:name="ApiDemosApplication"
             android:label="@string/activity_sample_code"
@@ -244,11 +242,20 @@
                 <category android:name="android.intent.category.SAMPLE_CODE" />
             </intent-filter>
         </activity>
-
+        
         <!-- Fragment Samples -->
 
         <activity android:name=".app.FragmentAlertDialog"
                 android:label="@string/fragment_alert_dialog"
+                android:enabled="@bool/atLeastHoneycomb">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.SAMPLE_CODE" />
+            </intent-filter>
+        </activity>
+
+        <activity android:name=".app.FragmentArguments"
+                android:label="@string/fragment_arguments"
                 android:enabled="@bool/atLeastHoneycomb">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
@@ -361,7 +368,7 @@
 
         <!-- Fragment Support Samples -->
 
-        <activity android:name=".app.FragmentAlertDialogSupport"
+        <activity android:name=".support.app.FragmentAlertDialogSupport"
                 android:label="@string/fragment_alert_dialog_support">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
@@ -369,7 +376,15 @@
             </intent-filter>
         </activity>
 
-        <activity android:name=".app.FragmentHideShowSupport"
+        <activity android:name=".support.app.FragmentArgumentsSupport"
+                android:label="@string/fragment_arguments_support">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.SAMPLE_CODE" />
+            </intent-filter>
+        </activity>
+
+        <activity android:name=".support.app.FragmentHideShowSupport"
                 android:label="@string/fragment_hide_show_support"
                 android:windowSoftInputMode="stateUnchanged">
             <intent-filter>
@@ -378,7 +393,7 @@
             </intent-filter>
         </activity>
 
-        <activity android:name=".app.FragmentContextMenuSupport"
+        <activity android:name=".support.app.FragmentContextMenuSupport"
                 android:label="@string/fragment_context_menu_support">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
@@ -386,7 +401,7 @@
             </intent-filter>
         </activity>
 
-        <activity android:name=".app.FragmentDialogSupport"
+        <activity android:name=".support.app.FragmentDialogSupport"
                 android:label="@string/fragment_dialog_support">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
@@ -394,7 +409,7 @@
             </intent-filter>
         </activity>
 
-        <activity android:name=".app.FragmentDialogOrActivitySupport"
+        <activity android:name=".support.app.FragmentDialogOrActivitySupport"
                 android:label="@string/fragment_dialog_or_activity_support">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
@@ -402,7 +417,7 @@
             </intent-filter>
         </activity>
 
-        <activity android:name=".app.FragmentLayoutSupport"
+        <activity android:name=".support.app.FragmentLayoutSupport"
                 android:label="@string/fragment_layout_support">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
@@ -410,7 +425,7 @@
             </intent-filter>
         </activity>
 
-        <activity android:name=".app.FragmentListCursorLoaderSupport"
+        <activity android:name=".support.app.FragmentListCursorLoaderSupport"
                 android:label="@string/fragment_list_cursor_loader_support">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
@@ -418,7 +433,7 @@
             </intent-filter>
         </activity>
 
-        <activity android:name=".app.FragmentListArraySupport"
+        <activity android:name=".support.app.FragmentListArraySupport"
                 android:label="@string/fragment_list_array_support">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
@@ -426,9 +441,9 @@
             </intent-filter>
         </activity>
 
-        <activity android:name=".app.FragmentLayoutSupport$DetailsActivity" />
+        <activity android:name=".support.app.FragmentLayoutSupport$DetailsActivity" />
 
-        <activity android:name=".app.FragmentMenuSupport"
+        <activity android:name=".support.app.FragmentMenuSupport"
                 android:label="@string/fragment_menu_support">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
@@ -436,7 +451,7 @@
             </intent-filter>
         </activity>
 
-        <activity android:name=".app.FragmentRetainInstanceSupport"
+        <activity android:name=".support.app.FragmentRetainInstanceSupport"
                 android:label="@string/fragment_retain_instance_support">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
@@ -444,7 +459,7 @@
             </intent-filter>
         </activity>
 
-        <activity android:name=".app.FragmentReceiveResultSupport"
+        <activity android:name=".support.app.FragmentReceiveResultSupport"
                 android:label="@string/fragment_receive_result_support">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
@@ -452,7 +467,7 @@
             </intent-filter>
         </activity>
 
-        <activity android:name=".app.FragmentStackSupport"
+        <activity android:name=".support.app.FragmentStackSupport"
                 android:label="@string/fragment_stack_support">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
@@ -475,6 +490,18 @@
                   android:authorities="com.example.android.apis.app.LoaderThrottle"
                   android:enabled="@bool/atLeastHoneycomb" />
 
+
+        <!-- Fragment Support Samples -->
+
+        <activity android:name=".support.app.LoaderThrottleSupport"
+                android:label="@string/loader_throttle_support">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.SAMPLE_CODE" />
+            </intent-filter>
+        </activity>
+        <provider android:name=".support.app.LoaderThrottleSupport$SimpleProvider"
+                  android:authorities="com.example.android.apis.support.app.LoaderThrottle" />
 
         <!-- Intent Samples -->
 
@@ -2080,6 +2107,13 @@
             </intent-filter>
         </activity>
 
+        <activity android:name=".view.GameControllerInput" android:label="Views/Game Controller Input">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.SAMPLE_CODE" />
+            </intent-filter>
+        </activity>
+
         <!-- ************************************* -->
         <!--           GRAPHICS SAMPLES            -->
         <!-- ************************************* -->
@@ -2185,7 +2219,7 @@
                 <category android:name="android.intent.category.SAMPLE_CODE" />
             </intent-filter>
         </activity>
-
+        
         <activity android:name=".graphics.TriangleActivity"
                 android:label="Graphics/OpenGL ES/Textured Triangle"
                 android:theme="@android:style/Theme.Holo.Dialog"
@@ -2260,7 +2294,8 @@
             </intent-filter>
         </activity>
 
-        <activity android:name=".graphics.TextAlign" android:label="Graphics/Text Align">
+        <activity android:hardwareAccelerated="false"
+                  android:name=".graphics.TextAlign" android:label="Graphics/Text Align">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.SAMPLE_CODE" />
@@ -2281,7 +2316,8 @@
             </intent-filter>
         </activity>
 
-        <activity android:name=".graphics.Clipping" android:label="Graphics/Clipping">
+        <activity android:hardwareAccelerated="false"
+                  android:name=".graphics.Clipping" android:label="Graphics/Clipping">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.SAMPLE_CODE" />
@@ -2295,7 +2331,8 @@
             </intent-filter>
         </activity>
 
-        <activity android:name=".graphics.UnicodeChart" android:label="Graphics/UnicodeChart">
+        <activity android:hardwareAccelerated="false"
+                  android:name=".graphics.UnicodeChart" android:label="Graphics/UnicodeChart">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.SAMPLE_CODE" />
@@ -2309,14 +2346,16 @@
             </intent-filter>
         </activity>
 
-        <activity android:name=".graphics.Pictures" android:label="Graphics/Pictures">
+        <activity android:hardwareAccelerated="false"
+                  android:name=".graphics.Pictures" android:label="Graphics/Pictures">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.SAMPLE_CODE" />
             </intent-filter>
         </activity>
 
-        <activity android:name=".graphics.Vertices" android:label="Graphics/Vertices">
+        <activity android:hardwareAccelerated="false"
+                  android:name=".graphics.Vertices" android:label="Graphics/Vertices">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.SAMPLE_CODE" />
@@ -2393,7 +2432,8 @@
             </intent-filter>
         </activity>
 
-        <activity android:name=".graphics.BitmapDecode" android:label="Graphics/BitmapDecode">
+        <activity android:hardwareAccelerated="false"
+                  android:name=".graphics.BitmapDecode" android:label="Graphics/BitmapDecode">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.SAMPLE_CODE" />
@@ -2414,7 +2454,8 @@
             </intent-filter>
         </activity>
 
-        <activity android:name=".graphics.DrawPoints" android:label="Graphics/Points">
+        <activity android:hardwareAccelerated="false"
+                  android:name=".graphics.DrawPoints" android:label="Graphics/Points">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.SAMPLE_CODE" />
