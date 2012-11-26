@@ -99,7 +99,8 @@ public class LoaderCursorSupport extends FragmentActivity {
             // Place an action bar item for searching.
             MenuItem item = menu.add("Search");
             item.setIcon(android.R.drawable.ic_menu_search);
-            MenuItemCompat.setShowAsAction(item, MenuItemCompat.SHOW_AS_ACTION_ALWAYS);
+            MenuItemCompat.setShowAsAction(item, MenuItemCompat.SHOW_AS_ACTION_ALWAYS
+                    | MenuItemCompat.SHOW_AS_ACTION_COLLAPSE_ACTION_VIEW);
             View searchView = SearchViewCompat.newSearchView(getActivity());
             if (searchView != null) {
                 SearchViewCompat.setOnQueryTextListener(searchView,
@@ -109,7 +110,16 @@ public class LoaderCursorSupport extends FragmentActivity {
                         // Called when the action bar search text has changed.  Update
                         // the search filter, and restart the loader to do a new query
                         // with this filter.
-                        mCurFilter = !TextUtils.isEmpty(newText) ? newText : null;
+                        String newFilter = !TextUtils.isEmpty(newText) ? newText : null;
+                        // Don't do anything if the filter hasn't actually changed.
+                        // Prevents restarting the loader when restoring state.
+                        if (mCurFilter == null && newFilter == null) {
+                            return true;
+                        }
+                        if (mCurFilter != null && mCurFilter.equals(newFilter)) {
+                            return true;
+                        }
+                        mCurFilter = newFilter;
                         getLoaderManager().restartLoader(0, null, CursorLoaderListFragment.this);
                         return true;
                     }

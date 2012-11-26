@@ -18,6 +18,7 @@ package android.support.v4.view;
 
 import android.graphics.Rect;
 import android.support.v4.view.accessibility.AccessibilityNodeInfoCompat;
+import android.support.v4.view.accessibility.AccessibilityNodeProviderCompat;
 import android.view.View;
 import android.view.accessibility.AccessibilityEvent;
 
@@ -43,6 +44,23 @@ public class ViewCompat {
      */
     public static final int OVER_SCROLL_NEVER = 2;
 
+    private static final long FAKE_FRAME_TIME = 10;
+
+    /**
+     * Automatically determine whether a view is important for accessibility.
+     */
+    public static final int IMPORTANT_FOR_ACCESSIBILITY_AUTO = 0x00000000;
+
+    /**
+     * The view is important for accessibility.
+     */
+    public static final int IMPORTANT_FOR_ACCESSIBILITY_YES = 0x00000001;
+
+    /**
+     * The view is not important for accessibility.
+     */
+    public static final int IMPORTANT_FOR_ACCESSIBILITY_NO = 0x00000002;
+
     interface ViewCompatImpl {
         public boolean canScrollHorizontally(View v, int direction);
         public boolean canScrollVertically(View v, int direction);
@@ -52,6 +70,15 @@ public class ViewCompat {
         public void onPopulateAccessibilityEvent(View v, AccessibilityEvent event);
         public void onInitializeAccessibilityNodeInfo(View v, AccessibilityNodeInfoCompat info);
         public void setAccessibilityDelegate(View v, AccessibilityDelegateCompat delegate);
+        public boolean hasTransientState(View view);
+        public void setHasTransientState(View view, boolean hasTransientState);
+        public void postInvalidateOnAnimation(View view);
+        public void postInvalidateOnAnimation(View view, int left, int top, int right, int bottom);
+        public void postOnAnimation(View view, Runnable action);
+        public void postOnAnimationDelayed(View view, Runnable action, long delayMillis);
+        public int getImportantForAccessibility(View view);
+        public void setImportantForAccessibility(View view, int mode);
+        public AccessibilityNodeProviderCompat getAccessibilityNodeProvider(View view);
     }
 
     static class BaseViewCompatImpl implements ViewCompatImpl {
@@ -79,6 +106,37 @@ public class ViewCompat {
         public void onInitializeAccessibilityNodeInfo(View v, AccessibilityNodeInfoCompat info) {
             // Do nothing; API doesn't exist
         }
+        public boolean hasTransientState(View view) {
+            // A view can't have transient state if transient state wasn't supported.
+            return false;
+        }
+        public void setHasTransientState(View view, boolean hasTransientState) {
+            // Do nothing; API doesn't exist
+        }
+        public void postInvalidateOnAnimation(View view) {
+            view.postInvalidateDelayed(getFrameTime());
+        }
+        public void postInvalidateOnAnimation(View view, int left, int top, int right, int bottom) {
+            view.postInvalidateDelayed(getFrameTime(), left, top, right, bottom);
+        }
+        public void postOnAnimation(View view, Runnable action) {
+            view.postDelayed(action, getFrameTime());
+        }
+        public void postOnAnimationDelayed(View view, Runnable action, long delayMillis) {
+            view.postDelayed(action, getFrameTime() + delayMillis);
+        }
+        long getFrameTime() {
+            return FAKE_FRAME_TIME;
+        }
+        public int getImportantForAccessibility(View view) {
+            return 0;
+        }
+        public void setImportantForAccessibility(View view, int mode) {
+
+        }
+        public AccessibilityNodeProviderCompat getAccessibilityNodeProvider(View view) {
+            return null;
+        }
     }
 
     static class GBViewCompatImpl extends BaseViewCompatImpl {
@@ -92,7 +150,13 @@ public class ViewCompat {
         }
     }
 
-    static class ICSViewCompatImpl extends GBViewCompatImpl {
+    static class HCViewCompatImpl extends GBViewCompatImpl {
+        long getFrameTime() {
+            return ViewCompatHC.getFrameTime();
+        }
+    }
+
+    static class ICSViewCompatImpl extends HCViewCompatImpl {
         @Override
         public boolean canScrollHorizontally(View v, int direction) {
             return ViewCompatICS.canScrollHorizontally(v, direction);
@@ -111,7 +175,7 @@ public class ViewCompat {
         }
         @Override
         public void onInitializeAccessibilityNodeInfo(View v, AccessibilityNodeInfoCompat info) {
-            ViewCompatICS.onInitializeAccessibilityNodeInfo(v, info.getImpl());
+            ViewCompatICS.onInitializeAccessibilityNodeInfo(v, info.getInfo());
         }
         @Override
         public void setAccessibilityDelegate(View v, AccessibilityDelegateCompat delegate) {
@@ -119,11 +183,58 @@ public class ViewCompat {
         }
     }
 
+    static class JBViewCompatImpl extends ICSViewCompatImpl {
+        @Override
+        public boolean hasTransientState(View view) {
+            return ViewCompatJB.hasTransientState(view);
+        }
+        @Override
+        public void setHasTransientState(View view, boolean hasTransientState) {
+            ViewCompatJB.setHasTransientState(view, hasTransientState);
+        }
+        @Override
+        public void postInvalidateOnAnimation(View view) {
+            ViewCompatJB.postInvalidateOnAnimation(view);
+        }
+        @Override
+        public void postInvalidateOnAnimation(View view, int left, int top, int right, int bottom) {
+            ViewCompatJB.postInvalidateOnAnimation(view, left, top, right, bottom);
+        }
+        @Override
+        public void postOnAnimation(View view, Runnable action) {
+            ViewCompatJB.postOnAnimation(view, action);
+        }
+        @Override
+        public void postOnAnimationDelayed(View view, Runnable action, long delayMillis) {
+            ViewCompatJB.postOnAnimationDelayed(view, action, delayMillis);
+        }
+        @Override
+        public int getImportantForAccessibility(View view) {
+            return ViewCompatJB.getImportantForAccessibility(view);
+        }
+        @Override
+        public void setImportantForAccessibility(View view, int mode) {
+            ViewCompatJB.setImportantForAccessibility(view, mode);
+        }
+        @Override
+        public AccessibilityNodeProviderCompat getAccessibilityNodeProvider(View view) {
+            Object compat = ViewCompatJB.getAccessibilityNodeProvider(view);
+            if (compat != null) {
+                return new AccessibilityNodeProviderCompat(compat);
+            }
+            return null;
+        }
+    }
+
     static final ViewCompatImpl IMPL;
     static {
         final int version = android.os.Build.VERSION.SDK_INT;
-        if (version >= 14) {
+        if (version >= 16 || android.os.Build.VERSION.CODENAME.equals("JellyBean")) {
+            IMPL = new JBViewCompatImpl();
+        } else if (version >= 14) {
             IMPL = new ICSViewCompatImpl();
+        } else if (version >= 11) {
+            IMPL = new HCViewCompatImpl();
         } else if (version >= 9) {
             IMPL = new GBViewCompatImpl();
         } else {
@@ -301,5 +412,149 @@ public class ViewCompat {
      */
     public static void setAccessibilityDelegate(View v, AccessibilityDelegateCompat delegate) {
         IMPL.setAccessibilityDelegate(v, delegate);
+    }
+
+    /**
+     * Indicates whether the view is currently tracking transient state that the
+     * app should not need to concern itself with saving and restoring, but that
+     * the framework should take special note to preserve when possible.
+     *
+     * @param view View to check for transient state
+     * @return true if the view has transient state
+     */
+    public static boolean hasTransientState(View view) {
+        return IMPL.hasTransientState(view);
+    }
+
+    /**
+     * Set whether this view is currently tracking transient state that the
+     * framework should attempt to preserve when possible.
+     *
+     * @param view View tracking transient state
+     * @param hasTransientState true if this view has transient state
+     */
+    public static void setHasTransientState(View view, boolean hasTransientState) {
+        IMPL.setHasTransientState(view, hasTransientState);
+    }
+
+    /**
+     * <p>Cause an invalidate to happen on the next animation time step, typically the
+     * next display frame.</p>
+     *
+     * <p>This method can be invoked from outside of the UI thread
+     * only when this View is attached to a window.</p>
+     *
+     * @param view View to invalidate
+     */
+    public static void postInvalidateOnAnimation(View view) {
+        IMPL.postInvalidateOnAnimation(view);
+    }
+
+    /**
+     * <p>Cause an invalidate of the specified area to happen on the next animation
+     * time step, typically the next display frame.</p>
+     *
+     * <p>This method can be invoked from outside of the UI thread
+     * only when this View is attached to a window.</p>
+     *
+     * @param view View to invalidate
+     * @param left The left coordinate of the rectangle to invalidate.
+     * @param top The top coordinate of the rectangle to invalidate.
+     * @param right The right coordinate of the rectangle to invalidate.
+     * @param bottom The bottom coordinate of the rectangle to invalidate.
+     */
+    public static void postInvalidateOnAnimation(View view, int left, int top,
+            int right, int bottom) {
+        IMPL.postInvalidateOnAnimation(view, left, top, right, bottom);
+    }
+
+    /**
+     * <p>Causes the Runnable to execute on the next animation time step.
+     * The runnable will be run on the user interface thread.</p>
+     *
+     * <p>This method can be invoked from outside of the UI thread
+     * only when this View is attached to a window.</p>
+     *
+     * @param view View to post this Runnable to
+     * @param action The Runnable that will be executed.
+     */
+    public static void postOnAnimation(View view, Runnable action) {
+        IMPL.postOnAnimation(view, action);
+    }
+
+    /**
+     * <p>Causes the Runnable to execute on the next animation time step,
+     * after the specified amount of time elapses.
+     * The runnable will be run on the user interface thread.</p>
+     *
+     * <p>This method can be invoked from outside of the UI thread
+     * only when this View is attached to a window.</p>
+     *
+     * @param view The view to post this Runnable to
+     * @param action The Runnable that will be executed.
+     * @param delayMillis The delay (in milliseconds) until the Runnable
+     *        will be executed.
+     */
+    public static void postOnAnimationDelayed(View view, Runnable action, long delayMillis) {
+        IMPL.postOnAnimationDelayed(view, action, delayMillis);
+    }
+
+    /**
+     * Gets the mode for determining whether this View is important for accessibility
+     * which is if it fires accessibility events and if it is reported to
+     * accessibility services that query the screen.
+     *
+     * @param view The view whose property to get.
+     * @return The mode for determining whether a View is important for accessibility.
+     *
+     * @see #IMPORTANT_FOR_ACCESSIBILITY_YES
+     * @see #IMPORTANT_FOR_ACCESSIBILITY_NO
+     * @see #IMPORTANT_FOR_ACCESSIBILITY_AUTO
+     */
+    public static int getImportantForAccessibility(View view) {
+        return IMPL.getImportantForAccessibility(view);
+    }
+
+    /**
+     * Sets how to determine whether this view is important for accessibility
+     * which is if it fires accessibility events and if it is reported to
+     * accessibility services that query the screen.
+     *
+     * @param view The view whose property to set.
+     * @param mode How to determine whether this view is important for accessibility.
+     *
+     * @see #IMPORTANT_FOR_ACCESSIBILITY_YES
+     * @see #IMPORTANT_FOR_ACCESSIBILITY_NO
+     * @see #IMPORTANT_FOR_ACCESSIBILITY_AUTO
+     */
+    public static void setImportantForAccessibility(View view, int mode) {
+        IMPL.setImportantForAccessibility(view, mode);
+    }
+
+    /**
+     * Gets the provider for managing a virtual view hierarchy rooted at this View
+     * and reported to {@link android.accessibilityservice.AccessibilityService}s
+     * that explore the window content.
+     * <p>
+     * If this method returns an instance, this instance is responsible for managing
+     * {@link AccessibilityNodeInfoCompat}s describing the virtual sub-tree rooted at
+     * this View including the one representing the View itself. Similarly the returned
+     * instance is responsible for performing accessibility actions on any virtual
+     * view or the root view itself.
+     * </p>
+     * <p>
+     * If an {@link AccessibilityDelegateCompat} has been specified via calling
+     * {@link #setAccessibilityDelegate(View, AccessibilityDelegateCompat) its
+     * {@link AccessibilityDelegateCompat#getAccessibilityNodeProvider(View)}
+     * is responsible for handling this call.
+     * </p>
+     *
+     * @param view The view whose property to get.
+     * @return The provider.
+     *
+     * @see AccessibilityNodeProviderCompat
+     */
+    public static AccessibilityNodeProviderCompat getAccessibilityNodeProvider(View view) {
+        return IMPL.getAccessibilityNodeProvider(view);
     }
 }

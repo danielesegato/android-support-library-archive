@@ -23,6 +23,7 @@ import android.graphics.drawable.Drawable;
 import android.text.TextUtils.TruncateAt;
 import android.util.AttributeSet;
 import android.util.TypedValue;
+import android.view.Gravity;
 import android.view.ViewGroup;
 import android.view.ViewParent;
 import android.widget.TextView;
@@ -36,18 +37,21 @@ import android.widget.TextView;
  * of the ViewPager. The title from each page is supplied by the method
  * {@link PagerAdapter#getPageTitle(int)} in the adapter supplied to
  * the ViewPager.
+ *
+ * <p>For an interactive indicator, see {@link PagerTabStrip}.</p>
  */
 public class PagerTitleStrip extends ViewGroup implements ViewPager.Decor {
     private static final String TAG = "PagerTitleStrip";
 
     ViewPager mPager;
-    private TextView mPrevText;
-    private TextView mCurrText;
-    private TextView mNextText;
+    TextView mPrevText;
+    TextView mCurrText;
+    TextView mNextText;
 
     private int mLastKnownCurrentPage = -1;
     private float mLastKnownPositionOffset = -1;
     private int mScaledTextSpacing;
+    private int mGravity;
 
     private boolean mUpdatingText;
     private boolean mUpdatingPositions;
@@ -56,12 +60,49 @@ public class PagerTitleStrip extends ViewGroup implements ViewPager.Decor {
 
     private static final int[] ATTRS = new int[] {
         android.R.attr.textAppearance,
+        android.R.attr.textSize,
         android.R.attr.textColor,
-        android.R.attr.textSize
+        android.R.attr.gravity
     };
 
-    private static final int SIDE_ALPHA = 0x99; // single-byte alpha, 0 = invisible, FF = opaque
+    private static final int[] TEXT_ATTRS = new int[] {
+        0x0101038c // android.R.attr.textAllCaps
+    };
+
+    private static final float SIDE_ALPHA = 0.6f;
     private static final int TEXT_SPACING = 16; // dip
+
+    private int mNonPrimaryAlpha;
+    int mTextColor;
+
+    interface PagerTitleStripImpl {
+        void setSingleLineAllCaps(TextView text);
+    }
+
+    static class PagerTitleStripImplBase implements PagerTitleStripImpl {
+        public void setSingleLineAllCaps(TextView text) {
+            text.setSingleLine();
+        }
+    }
+
+    static class PagerTitleStripImplIcs implements PagerTitleStripImpl {
+        public void setSingleLineAllCaps(TextView text) {
+            PagerTitleStripIcs.setSingleLineAllCaps(text);
+        }
+    }
+
+    private static final PagerTitleStripImpl IMPL;
+    static {
+        if (android.os.Build.VERSION.SDK_INT >= 14) {
+            IMPL = new PagerTitleStripImplIcs();
+        } else {
+            IMPL = new PagerTitleStripImplBase();
+        }
+    }
+
+    private static void setSingleLineAllCaps(TextView text) {
+        IMPL.setSingleLineAllCaps(text);
+    }
 
     public PagerTitleStrip(Context context) {
         this(context, null);
@@ -81,34 +122,115 @@ public class PagerTitleStrip extends ViewGroup implements ViewPager.Decor {
             mCurrText.setTextAppearance(context, textAppearance);
             mNextText.setTextAppearance(context, textAppearance);
         }
-        if (a.hasValue(1)) {
-            final int textColor = a.getColor(1, 0);
+        final int textSize = a.getDimensionPixelSize(1, 0);
+        if (textSize != 0) {
+            setTextSize(TypedValue.COMPLEX_UNIT_PX, textSize);
+        }
+        if (a.hasValue(2)) {
+            final int textColor = a.getColor(2, 0);
             mPrevText.setTextColor(textColor);
             mCurrText.setTextColor(textColor);
             mNextText.setTextColor(textColor);
         }
-        final int textSize = a.getDimensionPixelSize(2, 0);
-        if (textSize != 0) {
-            mPrevText.setTextSize(TypedValue.COMPLEX_UNIT_PX, textSize);
-            mCurrText.setTextSize(TypedValue.COMPLEX_UNIT_PX, textSize);
-            mNextText.setTextSize(TypedValue.COMPLEX_UNIT_PX, textSize);
-        }
+        mGravity = a.getInteger(3, Gravity.BOTTOM);
         a.recycle();
 
-        final int defaultColor = mPrevText.getTextColors().getDefaultColor();
-        final int transparentColor = (SIDE_ALPHA << 24) | (defaultColor & 0xFFFFFF);
-        mPrevText.setTextColor(transparentColor);
-        mNextText.setTextColor(transparentColor);
+        mTextColor = mCurrText.getTextColors().getDefaultColor();
+        setNonPrimaryAlpha(SIDE_ALPHA);
 
         mPrevText.setEllipsize(TruncateAt.END);
         mCurrText.setEllipsize(TruncateAt.END);
         mNextText.setEllipsize(TruncateAt.END);
-        mPrevText.setSingleLine();
-        mCurrText.setSingleLine();
-        mNextText.setSingleLine();
+
+        boolean allCaps = false;
+        if (textAppearance != 0) {
+            final TypedArray ta = context.obtainStyledAttributes(textAppearance, TEXT_ATTRS);
+            allCaps = ta.getBoolean(0, false);
+            ta.recycle();
+        }
+
+        if (allCaps) {
+            setSingleLineAllCaps(mPrevText);
+            setSingleLineAllCaps(mCurrText);
+            setSingleLineAllCaps(mNextText);
+        } else {
+            mPrevText.setSingleLine();
+            mCurrText.setSingleLine();
+            mNextText.setSingleLine();
+        }
 
         final float density = context.getResources().getDisplayMetrics().density;
         mScaledTextSpacing = (int) (TEXT_SPACING * density);
+    }
+
+    /**
+     * Set the required spacing between title segments.
+     *
+     * @param spacingPixels Spacing between each title displayed in pixels
+     */
+    public void setTextSpacing(int spacingPixels) {
+        mScaledTextSpacing = spacingPixels;
+        requestLayout();
+    }
+
+    /**
+     * @return The required spacing between title segments in pixels
+     */
+    public int getTextSpacing() {
+        return mScaledTextSpacing;
+    }
+
+    /**
+     * Set the alpha value used for non-primary page titles.
+     *
+     * @param alpha Opacity value in the range 0-1f
+     */
+    public void setNonPrimaryAlpha(float alpha) {
+        mNonPrimaryAlpha = (int) (alpha * 255) & 0xFF;
+        final int transparentColor = (mNonPrimaryAlpha << 24) | (mTextColor & 0xFFFFFF);
+        mPrevText.setTextColor(transparentColor);
+        mNextText.setTextColor(transparentColor);
+    }
+
+    /**
+     * Set the color value used as the base color for all displayed page titles.
+     * Alpha will be ignored for non-primary page titles. See {@link #setNonPrimaryAlpha(float)}.
+     *
+     * @param color Color hex code in 0xAARRGGBB format
+     */
+    public void setTextColor(int color) {
+        mTextColor = color;
+        mCurrText.setTextColor(color);
+        final int transparentColor = (mNonPrimaryAlpha << 24) | (mTextColor & 0xFFFFFF);
+        mPrevText.setTextColor(transparentColor);
+        mNextText.setTextColor(transparentColor);
+    }
+
+    /**
+     * Set the default text size to a given unit and value.
+     * See {@link TypedValue} for the possible dimension units.
+     *
+     * <p>Example: to set the text size to 14px, use
+     * setTextSize(TypedValue.COMPLEX_UNIT_PX, 14);</p>
+     *
+     * @param unit The desired dimension unit
+     * @param size The desired size in the given units
+     */
+    public void setTextSize(int unit, float size) {
+        mPrevText.setTextSize(unit, size);
+        mCurrText.setTextSize(unit, size);
+        mNextText.setTextSize(unit, size);
+    }
+
+    /**
+     * Set the {@link Gravity} used to position text within the title strip.
+     * Only the vertical gravity component is used.
+     *
+     * @param gravity {@link Gravity} constant for positioning title text
+     */
+    public void setGravity(int gravity) {
+        mGravity = gravity;
+        requestLayout();
     }
 
     @Override
@@ -132,10 +254,13 @@ public class PagerTitleStrip extends ViewGroup implements ViewPager.Decor {
 
     @Override
     protected void onDetachedFromWindow() {
-        updateAdapter(mPager.getAdapter(), null);
-        mPager.setInternalPageChangeListener(null);
-        mPager.setOnAdapterChangeListener(null);
-        mPager = null;
+        super.onDetachedFromWindow();
+        if (mPager != null) {
+            updateAdapter(mPager.getAdapter(), null);
+            mPager.setInternalPageChangeListener(null);
+            mPager.setOnAdapterChangeListener(null);
+            mPager = null;
+        }
     }
 
     void updateText(int currentItem, PagerAdapter adapter) {
@@ -148,7 +273,8 @@ public class PagerTitleStrip extends ViewGroup implements ViewPager.Decor {
         }
         mPrevText.setText(text);
 
-        mCurrText.setText(adapter != null ? adapter.getPageTitle(currentItem) : null);
+        mCurrText.setText(adapter != null && currentItem < itemCount ?
+                adapter.getPageTitle(currentItem) : null);
 
         text = null;
         if (currentItem + 1 < itemCount && adapter != null) {
@@ -161,7 +287,7 @@ public class PagerTitleStrip extends ViewGroup implements ViewPager.Decor {
         final int childHeight = getHeight() - getPaddingTop() - getPaddingBottom();
         final int childWidthSpec = MeasureSpec.makeMeasureSpec((int) (width * 0.8f),
                 MeasureSpec.AT_MOST);
-        final int childHeightSpec = MeasureSpec.makeMeasureSpec(childHeight, MeasureSpec.EXACTLY);
+        final int childHeightSpec = MeasureSpec.makeMeasureSpec(childHeight, MeasureSpec.AT_MOST);
         mPrevText.measure(childWidthSpec, childHeightSpec);
         mCurrText.measure(childWidthSpec, childHeightSpec);
         mNextText.measure(childWidthSpec, childHeightSpec);
@@ -169,7 +295,7 @@ public class PagerTitleStrip extends ViewGroup implements ViewPager.Decor {
         mLastKnownCurrentPage = currentItem;
 
         if (!mUpdatingPositions) {
-            updateTextPositions(currentItem, mLastKnownPositionOffset);
+            updateTextPositions(currentItem, mLastKnownPositionOffset, false);
         }
 
         mUpdatingText = false;
@@ -197,10 +323,10 @@ public class PagerTitleStrip extends ViewGroup implements ViewPager.Decor {
         }
     }
 
-    void updateTextPositions(int position, float positionOffset) {
+    void updateTextPositions(int position, float positionOffset, boolean force) {
         if (position != mLastKnownCurrentPage) {
             updateText(position, mPager.getAdapter());
-        } else if (positionOffset == mLastKnownPositionOffset) {
+        } else if (!force && positionOffset == mLastKnownPositionOffset) {
             return;
         }
 
@@ -212,9 +338,11 @@ public class PagerTitleStrip extends ViewGroup implements ViewPager.Decor {
         final int halfCurrWidth = currWidth / 2;
 
         final int stripWidth = getWidth();
+        final int stripHeight = getHeight();
         final int paddingLeft = getPaddingLeft();
         final int paddingRight = getPaddingRight();
         final int paddingTop = getPaddingTop();
+        final int paddingBottom = getPaddingBottom();
         final int textPaddedLeft = paddingLeft + halfCurrWidth;
         final int textPaddedRight = paddingRight + halfCurrWidth;
         final int contentWidth = stripWidth - textPaddedLeft - textPaddedRight;
@@ -227,17 +355,57 @@ public class PagerTitleStrip extends ViewGroup implements ViewPager.Decor {
         final int currLeft = currCenter - currWidth / 2;
         final int currRight = currLeft + currWidth;
 
-        mCurrText.layout(currLeft, paddingTop, currRight,
-                paddingTop + mCurrText.getMeasuredHeight());
+        final int prevBaseline = mPrevText.getBaseline();
+        final int currBaseline = mCurrText.getBaseline();
+        final int nextBaseline = mNextText.getBaseline();
+        final int maxBaseline = Math.max(Math.max(prevBaseline, currBaseline), nextBaseline);
+        final int prevTopOffset = maxBaseline - prevBaseline;
+        final int currTopOffset = maxBaseline - currBaseline;
+        final int nextTopOffset = maxBaseline - nextBaseline;
+        final int alignedPrevHeight = prevTopOffset + mPrevText.getMeasuredHeight();
+        final int alignedCurrHeight = currTopOffset + mCurrText.getMeasuredHeight();
+        final int alignedNextHeight = nextTopOffset + mNextText.getMeasuredHeight();
+        final int maxTextHeight = Math.max(Math.max(alignedPrevHeight, alignedCurrHeight),
+                alignedNextHeight);
+
+        final int vgrav = mGravity & Gravity.VERTICAL_GRAVITY_MASK;
+
+        int prevTop;
+        int currTop;
+        int nextTop;
+        switch (vgrav) {
+            default:
+            case Gravity.TOP:
+                prevTop = paddingTop + prevTopOffset;
+                currTop = paddingTop + currTopOffset;
+                nextTop = paddingTop + nextTopOffset;
+                break;
+            case Gravity.CENTER_VERTICAL:
+                final int paddedHeight = stripHeight - paddingTop - paddingBottom;
+                final int centeredTop = (paddedHeight - maxTextHeight) / 2;
+                prevTop = centeredTop + prevTopOffset;
+                currTop = centeredTop + currTopOffset;
+                nextTop = centeredTop + nextTopOffset;
+                break;
+            case Gravity.BOTTOM:
+                final int bottomGravTop = stripHeight - paddingBottom - maxTextHeight;
+                prevTop = bottomGravTop + prevTopOffset;
+                currTop = bottomGravTop + currTopOffset;
+                nextTop = bottomGravTop + nextTopOffset;
+                break;
+        }
+
+        mCurrText.layout(currLeft, currTop, currRight,
+                currTop + mCurrText.getMeasuredHeight());
 
         final int prevLeft = Math.min(paddingLeft, currLeft - mScaledTextSpacing - prevWidth);
-        mPrevText.layout(prevLeft, paddingTop, prevLeft + prevWidth,
-                paddingTop + mPrevText.getMeasuredHeight());
+        mPrevText.layout(prevLeft, prevTop, prevLeft + prevWidth,
+                prevTop + mPrevText.getMeasuredHeight());
 
         final int nextLeft = Math.max(stripWidth - paddingRight - nextWidth,
                 currRight + mScaledTextSpacing);
-        mNextText.layout(nextLeft, paddingTop, nextLeft + nextWidth,
-                paddingTop + mNextText.getMeasuredHeight());
+        mNextText.layout(nextLeft, nextTop, nextLeft + nextWidth,
+                nextTop + mNextText.getMeasuredHeight());
 
         mLastKnownPositionOffset = positionOffset;
         mUpdatingPositions = false;
@@ -255,18 +423,14 @@ public class PagerTitleStrip extends ViewGroup implements ViewPager.Decor {
         }
 
         int childHeight = heightSize;
-        int minHeight = 0;
+        int minHeight = getMinHeight();
         int padding = 0;
-        final Drawable bg = getBackground();
-        if (bg != null) {
-            minHeight = bg.getIntrinsicHeight();
-        }
         padding = getPaddingTop() + getPaddingBottom();
         childHeight -= padding;
 
         final int childWidthSpec = MeasureSpec.makeMeasureSpec((int) (widthSize * 0.8f),
                 MeasureSpec.AT_MOST);
-        final int childHeightSpec = MeasureSpec.makeMeasureSpec(childHeight, heightMode);
+        final int childHeightSpec = MeasureSpec.makeMeasureSpec(childHeight, MeasureSpec.AT_MOST);
 
         mPrevText.measure(childWidthSpec, childHeightSpec);
         mCurrText.measure(childWidthSpec, childHeightSpec);
@@ -283,8 +447,18 @@ public class PagerTitleStrip extends ViewGroup implements ViewPager.Decor {
     @Override
     protected void onLayout(boolean changed, int l, int t, int r, int b) {
         if (mPager != null) {
-            updateTextPositions(mPager.getCurrentItem(), 0.f);
+            final float offset = mLastKnownPositionOffset >= 0 ? mLastKnownPositionOffset : 0;
+            updateTextPositions(mPager.getCurrentItem(), offset, true);
         }
+    }
+
+    int getMinHeight() {
+        int minHeight = 0;
+        final Drawable bg = getBackground();
+        if (bg != null) {
+            minHeight = bg.getIntrinsicHeight();
+        }
+        return minHeight;
     }
 
     private class PageListener extends DataSetObserver implements ViewPager.OnPageChangeListener,
@@ -297,7 +471,7 @@ public class PagerTitleStrip extends ViewGroup implements ViewPager.Decor {
                 // Consider ourselves to be on the next page when we're 50% of the way there.
                 position++;
             }
-            updateTextPositions(position, positionOffset);
+            updateTextPositions(position, positionOffset, false);
         }
 
         @Override
