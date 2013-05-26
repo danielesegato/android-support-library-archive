@@ -14,15 +14,19 @@
  * limitations under the License.
  */
 
-package android.support.v4.widget;
+package android.support.v4.app;
 
-import android.widget.OverScroller;
+import android.app.Activity;
+import android.content.Context;
+import android.content.Intent;
+import android.os.Bundle;
 
-/**
- * ICS API access for ScrollerCompat
- */
-class ScrollerCompatIcs {
-    public static float getCurrVelocity(Object scroller) {
-        return ((OverScroller) scroller).getCurrVelocity();
+class ActivityCompatJB {
+    public static void startActivity(Context context, Intent intent, Bundle options) {
+        context.startActivity(intent, options);
+    }
+
+    public static void startActivityForResult(Activity activity, Intent intent, int requestCode, Bundle options) {
+        activity.startActivityForResult(intent, requestCode, options);
     }
 }

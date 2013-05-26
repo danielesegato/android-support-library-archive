@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2012 The Android Open Source Project
+ * Copyright (C) 2013 The Android Open Source Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,15 +14,16 @@
  * limitations under the License.
  */
 
-package android.support.v4.widget;
 
-import android.widget.OverScroller;
+package android.support.v4.view;
 
-/**
- * ICS API access for ScrollerCompat
- */
-class ScrollerCompatIcs {
-    public static float getCurrVelocity(Object scroller) {
-        return ((OverScroller) scroller).getCurrVelocity();
+import android.view.ViewGroup;
+
+class ViewGroupCompatHC {
+    private ViewGroupCompatHC() {
+    }
+
+    public static void setMotionEventSplittingEnabled(ViewGroup group, boolean split) {
+        group.setMotionEventSplittingEnabled(split);
     }
 }
