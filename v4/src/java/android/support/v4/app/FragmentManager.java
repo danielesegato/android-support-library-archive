@@ -46,15 +46,18 @@ import java.io.FileDescriptor;
 import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 
 /**
  * Static library support version of the framework's {@link android.app.FragmentManager}.
  * Used to write apps that run on platforms prior to Android 3.0.  When running
  * on Android 3.0 or above, this implementation is still used; it does not try
- * to switch to the framework's implementation.  See the framework SDK
+ * to switch to the framework's implementation.  See the framework {@link FragmentManager}
  * documentation for a class overview.
- * 
- * <p>Your activity must derive from {@link FragmentActivity} to use this.
+ *
+ * <p>Your activity must derive from {@link FragmentActivity} to use this. From such an activity,
+ * you can acquire the {@link FragmentManager} by calling
+ * {@link FragmentActivity#getSupportFragmentManager}.
  */
 public abstract class FragmentManager {
     /**
@@ -290,6 +293,14 @@ public abstract class FragmentManager {
      * the given reference.
      */
     public abstract Fragment getFragment(Bundle bundle, String key);
+
+    /**
+     * Get a list of all fragments that have been added to the fragment manager.
+     *
+     * @return The list of all fragments or null if none.
+     * @hide
+     */
+    public abstract List<Fragment> getFragments();
 
     /**
      * Save the current instance state of the given Fragment.  This can be
@@ -565,6 +576,11 @@ final class FragmentManagerImpl extends FragmentManager {
                     + key + ": index " + index));
         }
         return f;
+    }
+
+    @Override
+    public List<Fragment> getFragments() {
+        return mActive;
     }
 
     @Override
@@ -2008,7 +2024,7 @@ final class FragmentManagerImpl extends FragmentManager {
             }
         }
     }
-    
+
     public static int reverseTransit(int transit) {
         int rev = 0;
         switch (transit) {

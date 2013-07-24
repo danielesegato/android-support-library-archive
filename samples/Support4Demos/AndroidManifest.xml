@@ -23,6 +23,7 @@
     package="com.example.android.supportv4">
 
     <uses-permission android:name="android.permission.READ_CONTACTS" />
+    <uses-permission android:name="android.permission.WAKE_LOCK" />
 
     <uses-sdk android:minSdkVersion="4" android:targetSdkVersion="17" />
 
@@ -242,6 +243,17 @@
         <service android:name=".content.LocalServiceBroadcaster$LocalService"
                 android:stopWithTask="true" />
 
+        <activity android:name=".content.SimpleWakefulController"
+                  android:label="@string/simple_wakeful_controller">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="com.example.android.supportv4.SUPPORT4_SAMPLE_CODE" />
+            </intent-filter>
+        </activity>
+
+        <receiver android:name=".content.SimpleWakefulReceiver" />
+        <service android:name=".content.SimpleWakefulService" />
+
         <activity android:name=".accessibility.AccessibilityManagerSupportActivity"
                 android:label="@string/accessibility_manager_title">
             <intent-filter>
@@ -273,6 +285,14 @@
                 <action android:name="android.intent.action.SEND_MULTIPLE" />
                 <data android:mimeType="text/plain" />
                 <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+        </activity>
+
+        <activity android:name=".text.BidiFormatterSupport"
+                  android:label="@string/bidiformatter_support_title">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="com.example.android.supportv4.SUPPORT4_SAMPLE_CODE" />
             </intent-filter>
         </activity>
 
@@ -316,6 +336,14 @@
                 android:resource="@xml/my_paths" />
         </provider>
 
+
+        <activity android:name=".media.TransportControllerActivity"
+                android:label="@string/sample_transport_controller_activity">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="com.example.android.supportv4.SUPPORT4_SAMPLE_CODE" />
+            </intent-filter>
+        </activity>
 
     </application>
 </manifest>

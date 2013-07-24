@@ -17,7 +17,9 @@
 package android.support.v4.view;
 
 import android.graphics.Paint;
+import android.graphics.PixelFormat;
 import android.graphics.Rect;
+import android.graphics.drawable.Drawable;
 import android.os.Bundle;
 import android.support.v4.view.accessibility.AccessibilityNodeInfoCompat;
 import android.support.v4.view.accessibility.AccessibilityNodeProviderCompat;
@@ -153,6 +155,7 @@ public class ViewCompat {
         public void setImportantForAccessibility(View view, int mode);
         public boolean performAccessibilityAction(View view, int action, Bundle arguments);
         public AccessibilityNodeProviderCompat getAccessibilityNodeProvider(View view);
+        public float getAlpha(View view);
         public void setLayerType(View view, int layerType, Paint paint);
         public int getLayerType(View view);
         public int getLabelFor(View view);
@@ -161,6 +164,7 @@ public class ViewCompat {
         public int getLayoutDirection(View view);
         public void setLayoutDirection(View view, int layoutDirection);
         public ViewParent getParentForAccessibility(View view);
+        public boolean isOpaque(View view);
     }
 
     static class BaseViewCompatImpl implements ViewCompatImpl {
@@ -222,6 +226,9 @@ public class ViewCompat {
         public AccessibilityNodeProviderCompat getAccessibilityNodeProvider(View view) {
             return null;
         }
+        public float getAlpha(View view) {
+            return 1.0f;
+        }
         public void setLayerType(View view, int layerType, Paint paint) {
             // No-op until layers became available (HC)
         }
@@ -252,9 +259,25 @@ public class ViewCompat {
         public ViewParent getParentForAccessibility(View view) {
             return view.getParent();
         }
+
+        @Override
+        public boolean isOpaque(View view) {
+            final Drawable bg = view.getBackground();
+            if (bg != null) {
+                return bg.getOpacity() == PixelFormat.OPAQUE;
+            }
+            return false;
+        }
     }
 
-    static class GBViewCompatImpl extends BaseViewCompatImpl {
+    static class EclairMr1ViewCompatImpl extends BaseViewCompatImpl {
+        @Override
+        public boolean isOpaque(View view) {
+            return ViewCompatEclairMr1.isOpaque(view);
+        }
+    }
+
+    static class GBViewCompatImpl extends EclairMr1ViewCompatImpl {
         @Override
         public int getOverScrollMode(View v) {
             return ViewCompatGingerbread.getOverScrollMode(v);
@@ -266,13 +289,20 @@ public class ViewCompat {
     }
 
     static class HCViewCompatImpl extends GBViewCompatImpl {
+        @Override
         long getFrameTime() {
             return ViewCompatHC.getFrameTime();
         }
-        @Override public void setLayerType(View view, int layerType, Paint paint) {
+        @Override
+        public float getAlpha(View view) {
+            return ViewCompatHC.getAlpha(view);
+        }
+        @Override
+        public void setLayerType(View view, int layerType, Paint paint) {
             ViewCompatHC.setLayerType(view, layerType, paint);
         }
-        @Override public int getLayerType(View view)  {
+        @Override
+        public int getLayerType(View view)  {
             return ViewCompatHC.getLayerType(view);
         }
         @Override
@@ -730,7 +760,7 @@ public class ViewCompat {
      * </p>
      * <p>
      * If an {@link AccessibilityDelegateCompat} has been specified via calling
-     * {@link #setAccessibilityDelegate(View, AccessibilityDelegateCompat) its
+     * {@link #setAccessibilityDelegate(View, AccessibilityDelegateCompat)} its
      * {@link AccessibilityDelegateCompat#getAccessibilityNodeProvider(View)}
      * is responsible for handling this call.
      * </p>
@@ -742,6 +772,17 @@ public class ViewCompat {
      */
     public static AccessibilityNodeProviderCompat getAccessibilityNodeProvider(View view) {
         return IMPL.getAccessibilityNodeProvider(view);
+    }
+
+    /**
+     * The opacity of the view. This is a value from 0 to 1, where 0 means the view is
+     * completely transparent and 1 means the view is completely opaque.
+     *
+     * <p>By default this is 1.0f. Prior to API 11, the returned value is always 1.0f.
+     * @return The opacity of the view.
+     */
+    public static float getAlpha(View view) {
+        return IMPL.getAlpha(view);
     }
 
     /**
@@ -907,5 +948,18 @@ public class ViewCompat {
      */
     public static ViewParent getParentForAccessibility(View view) {
         return IMPL.getParentForAccessibility(view);
+    }
+
+    /**
+     * Indicates whether this View is opaque. An opaque View guarantees that it will
+     * draw all the pixels overlapping its bounds using a fully opaque color.
+     *
+     * On API 7 and above this will call View's true isOpaque method. On previous platform
+     * versions it will check the opacity of the view's background drawable if present.
+     *
+     * @return True if this View is guaranteed to be fully opaque, false otherwise.
+     */
+    public static boolean isOpaque(View view) {
+        return IMPL.isOpaque(view);
     }
 }

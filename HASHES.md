@@ -16,3 +16,4 @@ This can help to find out which revision is in use in a project. There is no oth
 | 11 | November 2012 | 7b5efe58fd28cbc7fa8f9e88ab9c7d65 | 48c94ae70fa65718b382098237806a5909bb096e |
 | 12 | February 2013 | 9974894df6e8ba95bb27f5e85e2cdfb5 | 307c1cc532eabbf1d135b43e5c983c9da700449d |
 | 13 | May 2013      | 5dce8843261486180715e459d953885d | bd6479f5dd592790607e0504e66e0f31c2b4d308 |
+| 18 | July 2013     | ed257a47cae11af1a55614055b879947 | 4a6be13368bb64c5a0b0460632d228a1a915f58f |

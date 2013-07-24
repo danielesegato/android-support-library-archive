@@ -25,6 +25,10 @@ class ViewCompatHC {
         return ValueAnimator.getFrameDelay();
     }
 
+    public static float getAlpha(View view) {
+        return view.getAlpha();
+    }
+
     public static void setLayerType(View view, int layerType, Paint paint) {
         view.setLayerType(layerType, paint);
     }

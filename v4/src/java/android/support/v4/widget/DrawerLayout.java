@@ -122,6 +122,10 @@ public class DrawerLayout extends ViewGroup {
      */
     private static final boolean ALLOW_EDGE_LOCK = false;
 
+    private static final boolean CHILDREN_DISALLOW_INTERCEPT = true;
+
+    private static final float TOUCH_SLOP_SENSITIVITY = 1.f;
+
     private static final int[] LAYOUT_ATTRS = new int[] {
             android.R.attr.layout_gravity
     };
@@ -227,12 +231,12 @@ public class DrawerLayout extends ViewGroup {
         mLeftCallback = new ViewDragCallback(Gravity.LEFT);
         mRightCallback = new ViewDragCallback(Gravity.RIGHT);
 
-        mLeftDragger = ViewDragHelper.create(this, 0.5f, mLeftCallback);
+        mLeftDragger = ViewDragHelper.create(this, TOUCH_SLOP_SENSITIVITY, mLeftCallback);
         mLeftDragger.setEdgeTrackingEnabled(ViewDragHelper.EDGE_LEFT);
         mLeftDragger.setMinVelocity(minVel);
         mLeftCallback.setDragger(mLeftDragger);
 
-        mRightDragger = ViewDragHelper.create(this, 0.5f, mRightCallback);
+        mRightDragger = ViewDragHelper.create(this, TOUCH_SLOP_SENSITIVITY, mRightCallback);
         mRightDragger.setEdgeTrackingEnabled(ViewDragHelper.EDGE_RIGHT);
         mRightDragger.setMinVelocity(minVel);
         mRightCallback.setDragger(mRightDragger);
@@ -582,14 +586,34 @@ public class DrawerLayout extends ViewGroup {
 
     @Override
     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
-        final int widthMode = MeasureSpec.getMode(widthMeasureSpec);
-        final int heightMode = MeasureSpec.getMode(heightMeasureSpec);
-        final int widthSize = MeasureSpec.getSize(widthMeasureSpec);
-        final int heightSize = MeasureSpec.getSize(heightMeasureSpec);
+        int widthMode = MeasureSpec.getMode(widthMeasureSpec);
+        int heightMode = MeasureSpec.getMode(heightMeasureSpec);
+        int widthSize = MeasureSpec.getSize(widthMeasureSpec);
+        int heightSize = MeasureSpec.getSize(heightMeasureSpec);
 
         if (widthMode != MeasureSpec.EXACTLY || heightMode != MeasureSpec.EXACTLY) {
-            throw new IllegalArgumentException(
-                    "DrawerLayout must be measured with MeasureSpec.EXACTLY.");
+            if (isInEditMode()) {
+                // Don't crash the layout editor. Consume all of the space if specified
+                // or pick a magic number from thin air otherwise.
+                // TODO Better communication with tools of this bogus state.
+                // It will crash on a real device.
+                if (widthMode == MeasureSpec.AT_MOST) {
+                    widthMode = MeasureSpec.EXACTLY;
+                } else if (widthMode == MeasureSpec.UNSPECIFIED) {
+                    widthMode = MeasureSpec.EXACTLY;
+                    widthSize = 300;
+                }
+                if (heightMode == MeasureSpec.AT_MOST) {
+                    heightMode = MeasureSpec.EXACTLY;
+                }
+                else if (heightMode == MeasureSpec.UNSPECIFIED) {
+                    heightMode = MeasureSpec.EXACTLY;
+                    heightSize = 300;
+                }
+            } else {
+                throw new IllegalArgumentException(
+                        "DrawerLayout must be measured with MeasureSpec.EXACTLY.");
+            }
         }
 
         setMeasuredDimension(widthSize, heightSize);
@@ -639,6 +663,7 @@ public class DrawerLayout extends ViewGroup {
     @Override
     protected void onLayout(boolean changed, int l, int t, int r, int b) {
         mInLayout = true;
+        final int width = r - l;
         final int childCount = getChildCount();
         for (int i = 0; i < childCount; i++) {
             final View child = getChildAt(i);
@@ -658,11 +683,16 @@ public class DrawerLayout extends ViewGroup {
                 final int childHeight = child.getMeasuredHeight();
                 int childLeft;
 
+                final float newOffset;
                 if (checkDrawerViewGravity(child, Gravity.LEFT)) {
                     childLeft = -childWidth + (int) (childWidth * lp.onScreen);
+                    newOffset = (float) (childWidth + childLeft) / childWidth;
                 } else { // Right; onMeasure checked for us.
-                    childLeft = r - l - (int) (childWidth * lp.onScreen);
+                    childLeft = width - (int) (childWidth * lp.onScreen);
+                    newOffset = (float) (width - childLeft) / childWidth;
                 }
+
+                final boolean changeOffset = newOffset != lp.onScreen;
 
                 final int vgrav = lp.gravity & Gravity.VERTICAL_GRAVITY_MASK;
 
@@ -699,8 +729,13 @@ public class DrawerLayout extends ViewGroup {
                     }
                 }
 
-                if (lp.onScreen == 0) {
-                    child.setVisibility(INVISIBLE);
+                if (changeOffset) {
+                    setDrawerViewOffset(child, newOffset);
+                }
+
+                final int newVisibility = lp.onScreen > 0 ? VISIBLE : INVISIBLE;
+                if (child.getVisibility() != newVisibility) {
+                    child.setVisibility(newVisibility);
                 }
             }
         }
@@ -910,8 +945,9 @@ public class DrawerLayout extends ViewGroup {
     }
 
     public void requestDisallowInterceptTouchEvent(boolean disallowIntercept) {
-        if (!mLeftDragger.isEdgeTouched(ViewDragHelper.EDGE_LEFT) &&
-                !mRightDragger.isEdgeTouched(ViewDragHelper.EDGE_RIGHT)) {
+        if (CHILDREN_DISALLOW_INTERCEPT ||
+                (!mLeftDragger.isEdgeTouched(ViewDragHelper.EDGE_LEFT) &&
+                !mRightDragger.isEdgeTouched(ViewDragHelper.EDGE_RIGHT))) {
             // If we have an edge touch we want to skip this and track it for later instead.
             super.requestDisallowInterceptTouchEvent(disallowIntercept);
         }
