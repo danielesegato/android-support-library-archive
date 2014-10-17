@@ -18,6 +18,6 @@ This can help to find out which revision is in use in a project. There is no oth
 |  13  | May 2013      | 5dce8843261486180715e459d953885d | bd6479f5dd592790607e0504e66e0f31c2b4d308 |
 |  18  | July 2013     | ed257a47cae11af1a55614055b879947 | 4a6be13368bb64c5a0b0460632d228a1a915f58f |
 |  19  | October 2013  | 8ec28ddd6c1b954bfa1fa54c5df54eba | 5896b0a4e377ac4242eb2bc785220c1c4fc052f4 |
-|19.0.1 | December 2013 | 0e7dc7acd3505ac97eb7e6d72719bab5 | db0f122c99ef9f90dbab3fada6d191f2880cbb8e |
-|19.1.0 | March 2014    | 0b72a547a1b0753bc1ff6aefe95a76f4 | ded9acc6a9792b8f1afc470f0c9cd36d178914cd |
-| 20    | July 2014     | 7c2158f2aba8503df83f92c934508e2f | efec67655f6db90757faa37201efcee2a9ec3507 |
+|19.0.1| December 2013 | 0e7dc7acd3505ac97eb7e6d72719bab5 | db0f122c99ef9f90dbab3fada6d191f2880cbb8e |
+|19.1.0| March 2014    | 0b72a547a1b0753bc1ff6aefe95a76f4 | ded9acc6a9792b8f1afc470f0c9cd36d178914cd |
+|  20  | July 2014     | 7c2158f2aba8503df83f92c934508e2f | efec67655f6db90757faa37201efcee2a9ec3507 |
